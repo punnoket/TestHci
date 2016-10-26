@@ -5,6 +5,7 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.os.StrictMode;
+import android.provider.SyncStateContract;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -103,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void openConnect(View view) throws UnknownHostException {
-        getImage();
+        //getImage();
         Intent intent = new Intent(MainActivity.this, ConnectDb.class);
         EditText nameText = (EditText) findViewById(R.id.name_login);
         EditText passText = (EditText) findViewById(R.id.password_login);
@@ -111,30 +112,30 @@ public class MainActivity extends AppCompatActivity {
         pass = passText.getText().toString();
         DBCursor cursor;
 
-        WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
-        String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+        try{
 
-        Log.v("ip", ip);
-        String dbURI = "mongodb://192.168.221.2:27017";
-       //  String dbURI = "mongodb://172.20.10.6:27017";
+        Log.v("ip", getPublicIpAddress());
+        String dbURI = ConstantProject.IP_PUBLIC_ADDRESS;
+
 
         MongoDBConnection mongoDBConnection = new MongoDBConnection(dbURI, "Student", "test");
         cursor = mongoDBConnection.getCursor() ;
 
         object = cursor.next();
 
-        try{
+
             while(object!=null) {
 
                 if(object.get("id").equals(id) && object.get("password").equals(pass)) {
                     String name = (String) object.get("name");
                     courses = (BasicDBList) object.get("course");
-                    Log.v("asdsad", "asdad");
+
                     student = new Student(name, pass, id);
                     for (int i = 0; i <courses.size() ; i++) {
                         DBObject courseObject = (DBObject) courses.get(i);
                         student.addCourse((String)courseObject.get("name"));
                         student.addSection((String)courseObject.get("section"));
+                        Log.v("asdsad", (String)courseObject.get("name"));
 
                     }
 
@@ -149,35 +150,80 @@ public class MainActivity extends AppCompatActivity {
 
         }catch (Exception e) {
 
+            e.printStackTrace();
             if(student == null) {
                 Log.d("error","invalid");
                 return;
             }
-        startActivity(intent);
+          startActivity(intent);
        }
-        //
+
 
     }
 
     public void getImage() {
 
         try {
-        String newFileName = "pun";
-        InputStream is = getAssets().open("boom.jpg");
+        ArrayList<String> image = new ArrayList<>();
+            image.add("deddueng");
+            image.add("monworarat");
+            image.add("nattanon");
+            image.add("noochakorn");
+            image.add("pawadee");
+            image.add("pokpong");
+            image.add("prapaporn");
+            image.add("rachata");
+            image.add("songsak");
+            image.add("wanida");
 
-        MongoClient mongoClient = new MongoClient(new MongoClientURI("mongodb://192.168.221.2:27017"));
+            for (int i = 0; i < image.size(); i++) {
 
-        DB db = mongoClient.getDB("test");
-        GridFS gfsPhoto = new GridFS(db, "photo");
-        GridFSInputFile gfsFile = gfsPhoto.createFile(is);
+                String newFileName = image.get(i);
+                InputStream is = getAssets().open( image.get(i)+".jpg");
+
+                MongoClient mongoClient = new MongoClient(new MongoClientURI("mongodb://192.168.221.2:27017"));
+
+                DB db = mongoClient.getDB("test");
+                GridFS gfsPhoto = new GridFS(db, "photo");
+                GridFSInputFile gfsFile = gfsPhoto.createFile(is);
 
 
-        gfsFile.setFilename(newFileName);
-        gfsFile.save();
+                gfsFile.setFilename(newFileName);
+                gfsFile.save();
+
+            }
+
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String getPublicIpAddress() {
+        String res = null;
+        try {
+            String localhost = InetAddress.getLocalHost().getHostAddress();
+            Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
+            while (e.hasMoreElements()) {
+                NetworkInterface ni = (NetworkInterface) e.nextElement();
+                if(ni.isLoopback())
+                    continue;
+                if(ni.isPointToPoint())
+                    continue;
+                Enumeration<InetAddress> addresses = ni.getInetAddresses();
+                while(addresses.hasMoreElements()) {
+                    InetAddress address = (InetAddress) addresses.nextElement();
+                    if(address instanceof Inet4Address) {
+                        String ip = address.getHostAddress();
+                        if(!ip.equals(localhost))
+                            System.out.println((res = ip));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return res;
     }
 }

@@ -14,7 +14,9 @@ import android.support.v7.widget.Toolbar;
 import android.telecom.Call;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.github.nkzawa.socketio.client.Socket;
@@ -63,6 +65,9 @@ public class ConnectDb extends AppCompatActivity {
     private DBObject object;
     private ArrayList<Teacher> teacherList;
     private ArrayList<Course> courseList;
+    private ArrayList<LinearLayout> layouts;
+    private ArrayAdapter<LinearLayout> adapter;
+    private Student student;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,30 +86,31 @@ public class ConnectDb extends AppCompatActivity {
 
         getTeacherFromDB();
 
-        Student student = (Student) getIntent().getExtras().get("data");
+        student = (Student) getIntent().getExtras().get("data");
         TextView textView = (TextView) findViewById(R.id.textname);
         String course=" ";
 
 
+        textView.setText(student.getName()+course);
+        getImage();
 
         for (int i = 0; i < student.getCourse().size(); i++) {
             for (int j = 0; j <teacherList.size() ; j++) {
                 for (int k = 0; k <teacherList.get(k).getCountCourse() ; k++) {
                     if(student.getCourse().get(i).equalsIgnoreCase(teacherList.get(j).getCourse().get(k).getName())
-                        && student.getSection().get(i).equalsIgnoreCase(teacherList.get(j).getCourse().get(k).getSection())) {
+                            && student.getSection().get(i).equalsIgnoreCase(teacherList.get(j).getCourse().get(k).getSection())) {
                         Log.v("cc"," " +teacherList.get(j).getName());
+
+
                     }
                 }
             }
         }
 
-
-
-        textView.setText(student.getName()+course);
     }
 
     public void getTeacherFromDB() {
-        mongoDBConnection = new MongoDBConnection("mongodb://192.168.221.2:27017", "Teacher", "test");
+        mongoDBConnection = new MongoDBConnection(ConstantProject. IP_PUBLIC_ADDRESS, "Teacher", "test");
         cursor = mongoDBConnection.getCursor();
         object = cursor.next();
 
@@ -123,6 +129,7 @@ public class ConnectDb extends AppCompatActivity {
                 Teacher teacher = new Teacher();
                 teacher.setName((String)object.get("name"));
                 teacher.setCountCourse(courses.size());
+                teacher.setImageName((String) object.get("image"));
 
                 for (int i = 0; i < courses.size() ; i++) {
                     teacher.addCourse(courseList.get(i));
@@ -144,29 +151,44 @@ public class ConnectDb extends AppCompatActivity {
 
     }
 
-    public void getImage(View view) {
+    public void getImage() {
 
         try {
+            layouts = new ArrayList<>();
 
-            MongoClient mongoClient = new MongoClient(new MongoClientURI("mongodb://192.168.221.2:27017"));
-
+            MongoClient mongoClient = new MongoClient(new MongoClientURI(ConstantProject.IP_PUBLIC_ADDRESS));
             DB db = mongoClient.getDB("test");
-            String newFileName = "pun";
             GridFS gfsPhoto = new GridFS(db, "photo");
-            GridFSDBFile imageForOutput = gfsPhoto.findOne(newFileName);
+
+            for (int i = 0; i < student.getCourse().size(); i++) {
+                for (int j = 0; j <teacherList.size() ; j++) {
+                    for (int k = 0; k <teacherList.get(k).getCountCourse() ; k++) {
+                        if(student.getCourse().get(i).equalsIgnoreCase(teacherList.get(j).getCourse().get(k).getName())
+                                && student.getSection().get(i).equalsIgnoreCase(teacherList.get(j).getCourse().get(k).getSection())) {
+                            Log.v("cc"," " +teacherList.get(j).getImageName());
+
+                            GridFSDBFile imageForOutput = gfsPhoto.findOne(teacherList.get(j).getImageName());
+
+                            File outFile;
+                            ImageView iv= (ImageView)findViewById(R.id.t1);
+                            Context context =  iv.getContext();
+                            outFile = File.createTempFile("xyz", null, context.getCacheDir());
+                            imageForOutput.writeTo(outFile);
+
+                            InputStream is = new FileInputStream(outFile);
+
+                            iv.setImageBitmap(BitmapFactory.decodeStream(is));
+                            outFile.delete();
+
+
+                        }
+                    }
+                }
+            }
 
 
 
-            File outFile;
-            ImageView iv= (ImageView)findViewById(R.id.image_1);
-            Context context =  iv.getContext();
-            outFile = File.createTempFile("xyz", null, context.getCacheDir());
-            imageForOutput.writeTo(outFile);
 
-            InputStream is = new FileInputStream(outFile);
-
-            iv.setImageBitmap(BitmapFactory.decodeStream(is));
-            outFile.delete();
 
 
 

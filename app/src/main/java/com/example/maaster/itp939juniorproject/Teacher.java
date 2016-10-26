@@ -13,6 +13,7 @@ public class Teacher {
     private ArrayList<Course> course;
     private Integer patr1, part2, part3;
     private Integer countCourse;
+    private String imageName;
 
     public Teacher(ArrayList<Course> course, String name, Integer countCourse) {
         course = new ArrayList<>();
@@ -74,5 +75,13 @@ public class Teacher {
 
     public void setPart3(Integer part3) {
         this.part3 = part3;
+    }
+
+    public String getImageName() {
+        return imageName;
+    }
+
+    public void setImageName(String imageName) {
+        this.imageName = imageName;
     }
 }
